@@ -40,7 +40,7 @@ int main()
         char cmd[10240] = {0};
         int ret;
         if(p == NULL){
-            printf("The rmq needs to be initialized.\n");
+            printf("The os needs to be initialized.\n");
             printf("Init step 1. Type: d for double, others for short.\n");
             scanf("%s", cmd);
             type = (cmd[0] == 'd')?__DS__DOUBLE__:__DS__SHORT__;
@@ -72,7 +72,7 @@ int main()
             printf("                 5)get upper bound, 6)find-K, 7)empty, 8)free\n");
 			printf("                 9)quit\n");
 	
-            while(choice <= 0 || choice > 10){
+            while(choice <= 0 || choice > 9){
                 scanf("%s", cmd);
                 sscanf(cmd, "%d", &choice);
             }
@@ -90,10 +90,10 @@ int main()
                 ret = osDelete(p, data);
                 if(ret==__DS__OS__OBJ_NOT_EXIST__){
                     printf("Element is not in the set.\n");
-                } 
+                 } 
                 else
 					printf("Delete OK\n");
-            }
+            } 
             else if(choice == 3){//find
                 printf("input a %s value:", (type == __DS__DOUBLE__)?"double":"short"); 
                 getData(type, data);

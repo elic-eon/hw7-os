@@ -42,7 +42,7 @@ int main()
         char cmd[10240] = {0};
         int ret;
         if(p == NULL){
-            printf("The rmq needs to be initialized.\n");
+            printf("The os needs to be initialized.\n");
             printf("Init step 1. Type: d for double, others for short.\n");
             scanf("%s", cmd);
             type = (cmd[0] == 'd')?__DS__DOUBLE__:__DS__SHORT__;
@@ -74,10 +74,10 @@ int main()
             printf("                 5)get upper bound, 6)find-K, 7)pre, 8)next\n");
 			printf("                 9)get item by it 10)empty, 11)free 12)quit\n");
 	
-            while(choice <= 0 || choice > 10){
+            while(choice <= 0 || choice > 12){
                 scanf("%s", cmd);
                 sscanf(cmd, "%d", &choice);
-            }
+            } 
             if(choice == 1){//insert
                 printf("input a %s value:", (type == __DS__DOUBLE__)?"double":"short"); 
                 getData(type, data);
@@ -173,17 +173,17 @@ int main()
 				}else{
 					printf("Invalid Iterator\n");
 				}
-			}
+			} 
             else if(choice == 10){//empty
                 if(osEmpty(p)==__DS__OS__EMPTY__)
                     printf("The os is empty.\n");
                 else
                     printf("The os is not empty.\n");
-            }   
+            }    
             else if(choice == 11){
                 osFree(p);
                 p = NULL;
-            }   
+            }    
             else if(choice == 12)
                 break;
         } 
