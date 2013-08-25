@@ -1,0 +1,5 @@
+echo ---------start debuging--------------\n
+b osInsert
+b osDelete
+r
+

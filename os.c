@@ -1,4 +1,3 @@
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -29,7 +28,6 @@ struct os_t
 	int dynamic;
 };
 
-
 /*Iterrator Support DS*/
 /*
  * This structure is used to maintain current iterator state
@@ -51,7 +49,7 @@ struct node *newNode(size_t objSize, void *pObj, struct node *pParent)
   struct node *new = malloc(sizeof(struct node));
   new->parent = pParent;
   new->level = 1;
-  new->nChild = 0;
+  new->nChild = 1;
   new->obj = malloc(objSize);
   memcpy(new->obj, pObj, objSize);
   new->left = new->right = NULL;
@@ -130,58 +128,101 @@ int osEmpty(struct os_t *pThis)
 	return __DS__OS__NOT_EMPTY__;
 }
 /*Rotate*/
-void R_Rotate(struct node *cur)
+struct node * R_Rotate(struct node *cur)
 {
-
+  if (cur->parent->parent == NULL)
+    ;
+  else if (cur->parent->parent->left == cur->parent)
+    cur->parent->parent->left = cur;
+  else
+    cur->parent->parent->right = cur;
+  cur->parent->left = cur->right;
+  if (cur->right)
+  {
+    cur->right->parent = cur->right;
+  }
+  cur->right = cur->parent;
+  cur->parent = cur->parent->parent;
+  cur->right->parent = cur;
+  cur->right->level -= (cur->right->level > 2) ? 2 : (cur->right->level == 2) ? 1 : 0;
+  cur->level = (cur->left == NULL) ? cur->right->level+1 : (cur->right->level > cur->left->level) ? cur->right->level+1 : cur->left->level+1;
+  cur->nChild += (cur->right->right == NULL)? 1 : (cur->right->right->nChild + 1);
+  cur->right->nChild -= (cur->left == NULL) ? 1 : (cur->left->nChild + 1);
+  return cur;
 }
-void L_Rotate(struct node *cur)
+struct node * L_Rotate(struct node *cur)
 {
-
+  if (cur->parent->parent == NULL)
+    ;
+  else if (cur->parent->parent->right == cur->parent)
+    cur->parent->parent->right = cur;
+  else
+    cur->parent->parent->left = cur;
+  cur->parent->right = cur->left;
+  if (cur->left)
+  {
+    cur->left->parent = cur->parent;
+  }
+  cur->left = cur->parent;
+  cur->parent = cur->parent->parent;
+  cur->left->parent = cur;
+  cur->left->level -= (cur->left->level > 2 ) ? 2 : (cur->left->level == 2) ? 1 : 0;
+  cur->level = (cur->right == NULL) ? cur->left->level+1 : (cur->right->level > cur->left->level) ? cur->right->level+1 : cur->left->level+1;
+  cur->nChild += (cur->left->left == NULL) ? 1 : (cur->left->left->nChild + 1);
+  cur->left->nChild -= (cur->right == NULL) ? 1 : (cur->right->nChild + 1);
+  return cur;
 }
-void RL_Rotate(struct node *cur)
+struct node * RL_Rotate(struct node *cur)
 {
-
+  cur = R_Rotate(cur);
+  cur = L_Rotate(cur);
+  return cur;
 }
-void LR_Rotate(struct node *cur)
+struct node * LR_Rotate(struct node *cur)
 {
-
+  cur = L_Rotate(cur);
+  cur = R_Rotate(cur);
+  return cur;
 }
 /*Buggy Handler*/
-int buggy(struct node *cur, int type)
+struct node * buggy(struct node *cur, int type)
 {
   /*type 1 means right > left*/
   /*type 2 means left > right*/
   if (type == 1)
   {
     if (cur->right->left == NULL)
-      L_Rotate(cur->right);
-    else if (cur->right->right == NULL)
-      RL_Rotate(cur->right->left);
-    if (cur->right->right->level > cur->right->left->level)
     {
-      L_Rotate(cur->right);
+      return L_Rotate(cur->right);
+    }
+    else if (cur->right->right == NULL)
+    {
+      return RL_Rotate(cur->right->left);
+    }
+    else if (cur->right->right->level > cur->right->left->level)
+    {
+      return L_Rotate(cur->right);
     }
     else
     {
-      RL_Rotate(cur->right->left);
+      return RL_Rotate(cur->right->left);
     }
   }
   else
   {
     if (cur->left->left == NULL)
-      LR_Rotate(cur->left->right);
+      return LR_Rotate(cur->left->right);
     else if (cur->left->right == NULL)
-      R_Rotate(cur->left);
-    if (cur->left->left->level > cur->left->right->level)
+      return R_Rotate(cur->left);
+    else if (cur->left->left->level > cur->left->right->level)
     {
-      R_Rotate(cur->left);
+      return R_Rotate(cur->left);
     }
     else
     {
-      LR_Rotate(cur->left->right);
+      return LR_Rotate(cur->left->right);
     }
   }
-  return 0;
 }
 /*Function used to support iterator*/
 int osGetByIt(osit it, void *pRetObj)
@@ -224,17 +265,30 @@ int osInsert(struct os_t *pThis, void *pObj)
   {
     pThis->head = newNode(pThis->objSize, pObj, NULL);
     pThis->size++;
+    return __DS__OS__NORMAL__;
   }
 	struct node* cur = pThis->head;
   while (1)
   {
     if (pThis->cmp(cur->obj, pObj) == 0)
       return __DS__OS__OBJ_EXIST__;
-    else if (pThis->cmp(cur-obj, pObj) > 0)
+    else if (pThis->cmp(cur->obj, pObj) < 0)
     {
       if (cur->right == NULL)
       {
         cur->right = newNode(pThis->objSize, pObj, cur);
+        if (cur->next == NULL)
+        {
+          cur->next = cur->right;
+          cur->right->pre = cur;
+        }
+        else
+        {
+          cur->right->pre = cur;
+          cur->right->next = cur->next;
+          cur->next->pre = cur->right;
+          cur->next = cur->right;
+        }
         cur = cur->right;
         break;
       }
@@ -248,6 +302,18 @@ int osInsert(struct os_t *pThis, void *pObj)
       if (cur->left == NULL)
       {
         cur->left = newNode(pThis->objSize, pObj, cur);
+        if (cur->pre == NULL)
+        {
+          cur->pre = cur->left;
+          cur->left->next = cur;
+        }
+        else
+        {
+          cur->left->next = cur;
+          cur->left->pre = cur->pre;
+          cur->pre->next = cur->left;
+          cur->pre = cur->left;
+        }
         cur = cur->left;
         break;
       }
@@ -258,54 +324,163 @@ int osInsert(struct os_t *pThis, void *pObj)
     }
   }
   /*update level and nChild*/
-  struct node *temp = cur;
-  while (temp != head)
-  {
-    temp->parent->levle++;
-    temp->parent->nChild++;
-  }
   while (1)
   {
-    if (cur == pThis->head)
-      break;
+    if (cur->left == NULL && cur->right == NULL)
+      ;
+    else if (cur->right == NULL)
+    {
+      cur->level = cur->left->level+1;
+    }
+    else if (cur->left == NULL)
+    {
+      cur->level = cur->right->level+1;
+    }
+    else
+    {
+      cur->level = (cur->right->level > cur->left->level) ? cur->right->level+1: cur->left->level+1;
+    }
     if (cur->left == NULL || cur->right == NULL)
     {
       if (cur->left == NULL && cur->right == NULL)
         ;
-      if (cur->right->level == 2)
+      else if (cur->left == NULL)
       {
-        buggy(cur, 1);
+        if (cur->right->level == 2)
+        {
+          if (cur == pThis->head)
+          {
+            pThis->head = buggy(cur, 1);
+          }
+          else
+            buggy(cur, 1);
+          break;
+        }
         /*left = 0 right = 2*/
-        break;
       }
-      else if (cur->left->level == 2)
+      else if (cur->right == NULL)
       {
-        buggy(cur, 2);
+        if (cur->left->level == 2)
+        {
+          if (cur == pThis->head)
+          {
+            pThis->head = buggy(cur, 2);
+          }
+          else
+            buggy(cur, 2);
+          break;
+        }
         /*left = 2 right = NULL*/
-        break;
       }
     }
     else if (cur->right->level - cur->left->level == 2)
     {
-      buggy(cur, 1);
+      if (cur == pThis->head)
+      {
+        pThis->head = buggy(cur, 1);
+      }
+      else
+        buggy(cur, 1);
       /*right > left*/
       break;
     }
     else if (cur->right->level - cur->left->level == -2)
     {
-      buggy(cur, 2);
+      if (cur == pThis->head)
+      {
+        pThis->head = buggy(cur, 2);
+      }
+      else
+        buggy(cur, 2);
       /*right < left*/
       break;
     }
+    if (cur == pThis->head)
+      break;
+    cur->parent->nChild++;
     cur = cur->parent;
   }
 	pThis->size++;
+  /*treeDebug(pThis);*/
 	return __DS__OS__NORMAL__;
 }
 
 int osDelete(struct os_t *pThis, void *pObj)
 {
 	struct node* cur = pThis->head;
+  if (pThis->size <= 3)
+  {
+    if (pThis->size == 0)
+      return __DS__OS__EMPTY__;
+    if (pThis->size == 1)
+    {
+      free(cur->obj);
+      free(cur);
+      pThis->size--;
+      return __DS__OS__OBJ_EXIST__;
+    }
+    if (pThis->cmp(cur->obj, pObj) == 0)
+    {
+      if (cur->right)
+      {
+        pThis->head = cur->right;
+        pThis->head->pre = cur->pre;
+        pThis->head->parent = NULL;
+        pThis->head->left = cur->left;
+        if (cur->left)
+          cur->left->parent = pThis->head;
+        free(cur->obj);
+        free(cur);
+        pThis->size--;
+        return __DS__OS__NORMAL__;
+      }
+      else
+      {
+        pThis->head = cur->left;
+        pThis->head->next = cur->next;
+        pThis->head->parent = NULL;
+        pThis->head->right = cur->right;
+        if (cur->right)
+          cur->right->parent = pThis->head;
+        free(cur->obj);
+        free(cur);
+        pThis->size--;
+        return __DS__OS__NORMAL__;
+      }
+    }
+    if (pThis->cmp(cur->obj, pObj) > 0)
+    {
+      if (cur->left == NULL)
+        return __DS__OS__OBJ_NOT_EXIST__;
+      if (pThis->cmp(cur->left->obj, pObj) != 0)
+        return __DS__OS__OBJ_NOT_EXIST__;
+      else
+      {
+        free(cur->left->obj);
+        free(cur->left);
+        pThis->head->left = NULL;
+        pThis->head->pre = NULL;
+        pThis->size--;
+        return __DS__OS__NORMAL__;
+      }
+    }
+    else
+    {
+      if (cur->right == NULL)
+        return __DS__OS__OBJ_NOT_EXIST__;
+      if (pThis->cmp(cur->right->obj, pObj) != 0)
+        return __DS__OS__OBJ_NOT_EXIST__;
+      else
+      {
+        free(cur->right->obj);
+        free(cur->right);
+        pThis->head->right = NULL;
+        pThis->head->next = NULL;
+        pThis->size--;
+        return __DS__OS__NORMAL__;
+      }
+    }
+  }
   /*find obj*/
   while (1)
   {
@@ -314,7 +489,7 @@ int osDelete(struct os_t *pThis, void *pObj)
     else if (pThis->cmp(pObj, cur->obj) > 0)
     {
       if (cur->right == NULL)
-        return __DS__OS__OBJ_NOY_EXIST__;
+        return __DS__OS__OBJ_NOT_EXIST__;
       else
         cur = cur->right;
     }
@@ -327,57 +502,296 @@ int osDelete(struct os_t *pThis, void *pObj)
     }
   }
   /*delete obj*/
-  pThis->it
+  struct node *re;
+  struct node *temp;
+  if (cur->next != NULL && cur->next->level < cur->level)
+  {
+    re = cur->next;
+    if (cur == pThis->head)
+      pThis->head = re;
+    temp = re->parent;
+    /*fix level nChild*/
+    re->parent->nChild--;
+    if (re->level > re->parent->right->level)
+      re->parent->level--;
+    /*fix linked list*/
+    cur->pre->next = re;
+    re->pre = cur->pre;
+    /*fix tree structure*/
+    if (re->parent == cur)
+    {
+      re->left = cur->left;
+      if (re->left)
+        re->left->parent = re;
+      re->parent = cur->parent;
+      cur->parent->right = re;
+    }
+    else
+    {
+      if (re->right != NULL)
+      {
+        re->parent->left = re->right;
+        re->right->parent = re->parent;
+      }
+      else
+      {
+        re->parent->left = NULL;
+      }
+      /*fix connection*/
+      re->parent = cur->parent;
+      re->left = cur->left;
+      if (re->left != NULL)
+        re->left->parent = re;
+      re->right = cur->right;
+      if (re->right != NULL)
+        re->right->parent = re;
+    }
+    free(cur->obj);
+    free(cur);
+  }
+  else if (cur->pre != NULL && cur->pre->level < cur->level)
+  {
+    re = cur->pre;
+    if (cur == pThis->head)
+      pThis->head = re;
+    temp = re->parent;
+    /*fix level nChild*/
+    re->parent->nChild--;
+    if (re->level > re->parent->left->level)
+      re->parent->level--;
+    /*fix linked list*/
+    cur->next->pre = re;
+    re->next = cur->next;
+    /*fix tree structure*/
+    if (re->parent == cur)
+    {
+      re->right = cur->right;
+      if (re->right)
+        re->right->parent = re;
+      re->parent = cur->parent;
+      cur->parent->left = re;
+    }
+    else
+    {
+      if (re->left != NULL)
+      {
+        re->parent->right = re->left;
+        re->left->parent = re->parent;
+      }
+      else
+      {
+        re->parent->right = NULL;
+      }
+      /*fix connection*/
+      re->parent = cur->parent;
+      re->left = cur->left;
+      if (re->left != NULL)
+        re->left->parent = re;
+      re->right = cur->right;
+      if (re->right != NULL)
+        re->right->parent = re;
+    }
+    free(cur->obj);
+    free(cur);
+  }
+  else
+  {
+    temp = cur->parent;
+    if (cur->pre)
+    {
+      cur->pre->next = cur->next;
+    }
+    if (cur->next)
+    {
+      cur->next->pre = cur->pre;
+    }
+    if (cur->parent == NULL)
+      ;
+    else if (cur->parent->right == cur)
+      cur->parent->right = NULL;
+    else if (cur->parent->left == cur)
+      cur->parent->left = NULL;
+    if (cur->parent)
+    {
+      cur->parent->level = (cur->parent->left) ? cur->parent->left->level-1 : 1;
+    }
+    free(cur->obj);
+    cur = NULL;
+    if (temp == NULL || pThis->size == 1)
+    {
+      pThis->size--;
+      return __DS__OS__NORMAL__;
+    }
+  }
   /*balance*/
+  cur = temp;
+  while (1)
+  {
+    if (cur->left == NULL && cur->right == NULL)
+      ;
+    else if (cur->right == NULL)
+    {
+      cur->level = cur->left->level+1;
+    }
+    else if (cur->left == NULL)
+    {
+      cur->level = cur->right->level+1;
+    }
+    else
+    {
+      cur->level = (cur->right->level > cur->left->level) ? cur->right->level+1: cur->left->level+1;
+    }
+    if (cur->left == NULL || cur->right == NULL)
+    {
+      if (cur->left == NULL && cur->right == NULL)
+        ;
+      else if (cur->left == NULL)
+      {
+        if (cur->right->level == 2)
+        {
+          if (cur == pThis->head)
+          {
+            pThis->head = buggy(cur, 1);
+          }
+          else
+            buggy(cur, 1);
+          break;
+        }
+        /*left = 0 right = 2*/
+      }
+      else if (cur->right == NULL)
+      {
+        if (cur->left->level == 2)
+        {
+          if (cur == pThis->head)
+          {
+            pThis->head = buggy(cur, 2);
+          }
+          else
+            buggy(cur, 2);
+          break;
+        }
+        /*left = 2 right = NULL*/
+      }
+    }
+    else if (cur->right->level - cur->left->level == 2)
+    {
+      if (cur == pThis->head)
+      {
+        pThis->head = buggy(cur, 1);
+      }
+      else
+        buggy(cur, 1);
+      /*right > left*/
+      break;
+    }
+    else if (cur->right->level - cur->left->level == -2)
+    {
+      if (cur == pThis->head)
+      {
+        pThis->head = buggy(cur, 2);
+      }
+      else
+        buggy(cur, 2);
+      /*right < left*/
+      break;
+    }
+    if (cur == pThis->head)
+      break;
+    cur->parent->nChild++;
+    cur = cur->parent;
+  }
+  pThis->size--;
+  return __DS__OS__NORMAL__;
 }
 
 int osFind(struct os_t *pThis, void *pObj)
 {
 	struct node* cur = pThis->head;
-	while(cur!=NULL)
- 	{
-		if(pThis->cmp(pObj,cur->object)==0 && cur->dummyNode==0)
- 		{
-			return __DS__OS__OBJ_EXIST__;
-		}
-		cur = cur->next;
-	}
-	return __DS__OS__OBJ_NOT_EXIST__;
+  while (1)
+  {
+    if (pThis->cmp(pObj, cur->obj) == 0)
+    {
+      return __DS__OS__OBJ_EXIST__;
+    }
+    else if (pThis->cmp(pObj, cur->obj) > 0)
+    {
+      if (cur->right == NULL)
+        return __DS__OS__OBJ_NOT_EXIST__;
+      else
+        cur = cur->right;
+    }
+    else
+    {
+      if (cur->left == NULL)
+        return __DS__OS__OBJ_NOT_EXIST__;
+      else
+        cur = cur->left;
+    }
+  }
+  pThis->size--;
+  return __DS__OS__OBJ_EXIST__;
 }
 
 int osLowerBound(struct os_t *pThis, void *lowObj, void *pRetObj)
 {
-	struct node* cur = pThis->head;
-	struct node* pNode = NULL;
-	while(cur!=NULL)
- 	{
-		if(	pThis->cmp(cur->object,lowObj)>=0 && cur->dummyNode==0 &&
-		   (pNode==NULL || pThis->cmp(cur->object,pNode->object)<0) )
- 		{
-			pNode = cur;
-		}
-		cur = cur->next;
-	}
-	if(pNode==NULL) return __DS__OS__OBJ_NOT_EXIST__;
-	memcpy(pRetObj, pNode->object, pThis->objSize);
+  struct node* cur = pThis->head;
+  while (1)
+  {
+    if (pThis->cmp(lowObj, cur->obj) == 0)
+    {
+      if (cur->pre == NULL)
+        memcpy(pRetObj, cur->obj, pThis->objSize);
+      else
+        memcpy(pRetObj, cur->pre->obj, pThis->objSize);
+      break;
+    }
+    else if (pThis->cmp(lowObj, cur->obj) > 0)
+    {
+      if (cur->right == NULL)
+        return __DS__OS__OBJ_NOT_EXIST__;
+      else
+        cur = cur->right;
+    }
+    else
+    {
+      if (cur->left == NULL)
+        return __DS__OS__OBJ_NOT_EXIST__;
+      else
+        cur = cur->left;
+    }
+  }
 	return __DS__OS__NORMAL__;
 }
 
 int osUpperBound(struct os_t *pThis, void *upObj, void *pRetObj)
 {
-	struct node* cur = pThis->head;
-	struct node* pNode = NULL;
-	while(cur!=NULL)
-	{
-		if( pThis->cmp(cur->object,upObj)<=0 && cur->dummyNode==0 &&
-			(pNode==NULL || pThis->cmp(cur->object,pNode->object)>0) )
-		{
-			pNode = cur;
-		}
-		cur = cur->next;
-	}
-	if(pNode==NULL) return __DS__OS__OBJ_NOT_EXIST__;
-	memcpy(pRetObj, pNode->object, pThis->objSize);
+  struct node* cur = pThis->head;
+  while (1)
+  {
+    if (pThis->cmp(upObj, cur->obj) == 0)
+    {
+      if (cur->next == NULL)
+        memcpy(pRetObj, cur->obj, pThis->objSize);
+      else
+        memcpy(pRetObj, cur->next->obj, pThis->objSize);
+      break;
+    }
+    else if (pThis->cmp(upObj, cur->obj) > 0)
+    {
+      if (cur->right == NULL)
+        return __DS__OS__OBJ_NOT_EXIST__;
+      else
+        cur = cur->right;
+    }
+    else
+    {
+      if (cur->left == NULL)
+        return __DS__OS__OBJ_NOT_EXIST__;
+      else
+        cur = cur->left;
+    }
+  }
 	return __DS__OS__NORMAL__;
 }
 
@@ -385,63 +799,63 @@ int osUpperBound(struct os_t *pThis, void *upObj, void *pRetObj)
 //Iterator support operator
 int osFindIt(struct os_t *pThis, void *pObj, osit *pRetIt)
 {
-	struct node* cur = pThis->head;
-	while(cur!=NULL)
- 	{
-		if(pThis->cmp(pObj,cur->object)==0 && cur->dummyNode==0)
- 		{
-			osit ret = malloc(sizeof(struct os_inner_t));
-			ret->node = cur;
-			ret->objSize = pThis->objSize;
-			*pRetIt = ret;
-			return __DS__OS__OBJ_EXIST__;
-		}
-		cur = cur->next;
-	}
+	/*struct node* cur = pThis->head;*/
+	/*while(cur!=NULL)*/
+   /*{*/
+		/*if(pThis->cmp(pObj,cur->object)==0 && cur->dummyNode==0)*/
+     /*{*/
+			/*osit ret = malloc(sizeof(struct os_inner_t));*/
+			/*ret->node = cur;*/
+			/*ret->objSize = pThis->objSize;*/
+			/**pRetIt = ret;*/
+			/*return __DS__OS__OBJ_EXIST__;*/
+		/*}*/
+		/*cur = cur->next;*/
+	/*}*/
 	return __DS__OS__OBJ_NOT_EXIST__;
 }
 
 int osLowerIt(struct os_t *pThis, void *pObj, osit *pRetIt)
 {
-	struct node* cur = pThis->head;
-	struct node* pNode = NULL;
-	while(cur!=NULL)
- 	{
-		if(	pThis->cmp(cur->object,pObj)>=0 && cur->dummyNode==0 &&
-		   (pNode==NULL || pThis->cmp(cur->object,pNode->object)<0) )
- 		{
-			pNode = cur;
-		}
-		cur = cur->next;
-	}
-	osit ret = NULL;
-	*pRetIt = ret;
-	if(pNode==NULL) return __DS__OS__OBJ_NOT_EXIST__;
-	ret = (osit)malloc(sizeof(struct os_inner_t));
-	ret->node = pNode;
-    ret->objSize = pThis->objSize;
+	/*struct node* cur = pThis->head;*/
+	/*struct node* pNode = NULL;*/
+	/*while(cur!=NULL)*/
+   /*{*/
+		/*if(	pThis->cmp(cur->object,pObj)>=0 && cur->dummyNode==0 &&*/
+			 /*(pNode==NULL || pThis->cmp(cur->object,pNode->object)<0) )*/
+     /*{*/
+			/*pNode = cur;*/
+		/*}*/
+		/*cur = cur->next;*/
+	/*}*/
+	/*osit ret = NULL;*/
+	/**pRetIt = ret;*/
+	/*if(pNode==NULL) return __DS__OS__OBJ_NOT_EXIST__;*/
+	/*ret = (osit)malloc(sizeof(struct os_inner_t));*/
+	/*ret->node = pNode;*/
+    /*ret->objSize = pThis->objSize;*/
 	return __DS__OS__NORMAL__;
 }
 
 int osUpperIt(struct os_t *pThis, void *pObj, osit *pRetIt)
 {
-	struct node* cur = pThis->head;
-	struct node* pNode = NULL;
-	while(cur!=NULL)
-	{
-		if( pThis->cmp(cur->object,pObj)<=0 && cur->dummyNode==0 &&
-			(pNode==NULL || pThis->cmp(cur->object,pNode->object)>0) )
-		{
-			pNode = cur;
-		}
-		cur = cur->next;
-	}
-	osit ret = NULL;
-	*pRetIt = ret;
-	if(pNode==NULL) return __DS__OS__OBJ_NOT_EXIST__;
-	ret = malloc(sizeof(struct os_inner_t));
-	ret->node = cur;
-	ret->objSize = pThis->objSize;
+	/*struct node* cur = pThis->head;*/
+	/*struct node* pNode = NULL;*/
+	/*while(cur!=NULL)*/
+	/*{*/
+		/*if( pThis->cmp(cur->object,pObj)<=0 && cur->dummyNode==0 &&*/
+			/*(pNode==NULL || pThis->cmp(cur->object,pNode->object)>0) )*/
+		/*{*/
+			/*pNode = cur;*/
+		/*}*/
+		/*cur = cur->next;*/
+	/*}*/
+	/*osit ret = NULL;*/
+	/**pRetIt = ret;*/
+	/*if(pNode==NULL) return __DS__OS__OBJ_NOT_EXIST__;*/
+	/*ret = malloc(sizeof(struct os_inner_t));*/
+	/*ret->node = cur;*/
+	/*ret->objSize = pThis->objSize;*/
 	return __DS__OS__NORMAL__;
 }
 
