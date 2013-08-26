@@ -22,7 +22,6 @@ struct node
 struct os_t
 {
 	struct node* head;
-  struct os_inner_t *it;
 	size_t objSize, size, cap;
 	int (*cmp)(const void*, const void*);
 	int dynamic;
@@ -70,13 +69,12 @@ int osInit(struct os_t *pThis, size_t objSize, size_t cap,
     pThis->dynamic = 1;
   }
   pThis->head = NULL;
-  pThis->it = malloc(sizeof(struct os_inner_t));
-  pThis->it->node = pThis->head;
-  pThis->it->objSize = objSize;
+  /*pThis->it = malloc(sizeof(struct os_inner_t));*/
+  /*pThis->it->node = pThis->head;*/
+  /*pThis->it->objSize = objSize;*/
   pThis->objSize = objSize;
   pThis->cmp = cmp;
   pThis->size = 0;
-
 	return __DS__OS__NORMAL__;
 }
 int nodeFree(struct node *cur)
@@ -123,51 +121,92 @@ size_t osObjSize(struct os_t *pThis)
 
 int osEmpty(struct os_t *pThis)
 {
-	if(pThis->head->next==NULL)//skip dummy node
+	if(pThis->size == 0)//skip dummy node
 		return __DS__OS__EMPTY__;
 	return __DS__OS__NOT_EMPTY__;
 }
 /*Rotate*/
 struct node * R_Rotate(struct node *cur)
 {
-  if (cur->parent->parent == NULL)
-    ;
+  if (cur->parent->parent == NULL) ;
   else if (cur->parent->parent->left == cur->parent)
     cur->parent->parent->left = cur;
   else
     cur->parent->parent->right = cur;
   cur->parent->left = cur->right;
   if (cur->right)
-  {
-    cur->right->parent = cur->right;
-  }
+    cur->right->parent = cur->parent;
   cur->right = cur->parent;
   cur->parent = cur->parent->parent;
   cur->right->parent = cur;
-  cur->right->level -= (cur->right->level > 2) ? 2 : (cur->right->level == 2) ? 1 : 0;
-  cur->level = (cur->left == NULL) ? cur->right->level+1 : (cur->right->level > cur->left->level) ? cur->right->level+1 : cur->left->level+1;
+  /*cur->right->level -= (cur->right->level > 2) ? 2 : (cur->right->level == 2) ? 1 : 0;*/
+  /*
+  cur->level = (cur->left == NULL) ? cur->right->level+1 :
+  (cur->right->level > cur->left->level) ? cur->right->level+1 : cur->left->level+1;*/
+  if (cur->right->left == NULL && cur->right->right == NULL)
+    cur->right->level = 1;
+  else if (cur->right->right == NULL)
+  {
+    cur->right->level = cur->right->left->level+1;
+  }
+  else if (cur->right->left == NULL)
+  {
+    cur->right->level = cur->right->right->level+1;
+  }
+  else
+  {
+    cur->right->level = (cur->right->right->level > cur->right->left->level) ? cur->right->right->level+1: cur->right->left->level+1;
+  }
+  if (cur->left == NULL)
+  {
+    cur->level = cur->right->level+1;
+  }
+  else
+  {
+    cur->level = (cur->right->level > cur->left->level) ? cur->right->level+1: cur->left->level+1;
+  }
   cur->nChild += (cur->right->right == NULL)? 1 : (cur->right->right->nChild + 1);
   cur->right->nChild -= (cur->left == NULL) ? 1 : (cur->left->nChild + 1);
   return cur;
 }
 struct node * L_Rotate(struct node *cur)
 {
-  if (cur->parent->parent == NULL)
-    ;
+  if (cur->parent->parent == NULL) ;
   else if (cur->parent->parent->right == cur->parent)
     cur->parent->parent->right = cur;
   else
     cur->parent->parent->left = cur;
   cur->parent->right = cur->left;
   if (cur->left)
-  {
     cur->left->parent = cur->parent;
-  }
   cur->left = cur->parent;
   cur->parent = cur->parent->parent;
   cur->left->parent = cur;
-  cur->left->level -= (cur->left->level > 2 ) ? 2 : (cur->left->level == 2) ? 1 : 0;
-  cur->level = (cur->right == NULL) ? cur->left->level+1 : (cur->right->level > cur->left->level) ? cur->right->level+1 : cur->left->level+1;
+  /*cur->left->level -= (cur->left->level > 2 ) ? 2 : (cur->left->level == 2) ? 1 : 0;*/
+  /*cur->level = (cur->right == NULL) ? cur->left->level+1 :
+    ((cur->right->level > cur->left->level) ? (cur->right->level+1) : (cur->left->level+1));*/
+  if (cur->left->left == NULL && cur->left->right == NULL)
+    cur->left->level = 1;
+  else if (cur->left->right == NULL)
+  {
+    cur->left->level = cur->left->left->level+1;
+  }
+  else if (cur->left->left == NULL)
+  {
+    cur->left->level = cur->left->right->level+1;
+  }
+  else
+  {
+    cur->left->level = (cur->left->right->level > cur->left->left->level) ? cur->left->right->level+1: cur->left->left->level+1;
+  }
+  if (cur->right == NULL)
+  {
+    cur->level = cur->left->level+1;
+  }
+  else
+  {
+    cur->level = (cur->right->level > cur->left->level) ? cur->right->level+1: cur->left->level+1;
+  }
   cur->nChild += (cur->left->left == NULL) ? 1 : (cur->left->left->nChild + 1);
   cur->left->nChild -= (cur->right == NULL) ? 1 : (cur->right->nChild + 1);
   return cur;
@@ -192,21 +231,13 @@ struct node * buggy(struct node *cur, int type)
   if (type == 1)
   {
     if (cur->right->left == NULL)
-    {
       return L_Rotate(cur->right);
-    }
     else if (cur->right->right == NULL)
-    {
       return RL_Rotate(cur->right->left);
-    }
     else if (cur->right->right->level > cur->right->left->level)
-    {
       return L_Rotate(cur->right);
-    }
     else
-    {
       return RL_Rotate(cur->right->left);
-    }
   }
   else
   {
@@ -215,13 +246,9 @@ struct node * buggy(struct node *cur, int type)
     else if (cur->left->right == NULL)
       return R_Rotate(cur->left);
     else if (cur->left->left->level > cur->left->right->level)
-    {
       return R_Rotate(cur->left);
-    }
     else
-    {
       return LR_Rotate(cur->left->right);
-    }
   }
 }
 /*Function used to support iterator*/
@@ -256,9 +283,7 @@ int osInsert(struct os_t *pThis, void *pObj)
 {
 	if(pThis->size == pThis->cap)
     if (pThis->dynamic)
-    {
       pThis->cap *= 2;
-    }
     else
 		  return __DS__OS__FULL__;
   if (pThis->size == 0)
@@ -293,9 +318,7 @@ int osInsert(struct os_t *pThis, void *pObj)
         break;
       }
       else
-      {
         cur = cur->right;
-      }
     }
     else
     {
@@ -323,11 +346,11 @@ int osInsert(struct os_t *pThis, void *pObj)
       }
     }
   }
-  /*update level and nChild*/
+  /*update level*/
   while (1)
   {
     if (cur->left == NULL && cur->right == NULL)
-      ;
+      cur->level = 1;
     else if (cur->right == NULL)
     {
       cur->level = cur->left->level+1;
@@ -349,9 +372,7 @@ int osInsert(struct os_t *pThis, void *pObj)
         if (cur->right->level == 2)
         {
           if (cur == pThis->head)
-          {
             pThis->head = buggy(cur, 1);
-          }
           else
             buggy(cur, 1);
           break;
@@ -363,9 +384,7 @@ int osInsert(struct os_t *pThis, void *pObj)
         if (cur->left->level == 2)
         {
           if (cur == pThis->head)
-          {
             pThis->head = buggy(cur, 2);
-          }
           else
             buggy(cur, 2);
           break;
@@ -397,16 +416,16 @@ int osInsert(struct os_t *pThis, void *pObj)
     }
     if (cur == pThis->head)
       break;
-    cur->parent->nChild++;
     cur = cur->parent;
   }
 	pThis->size++;
-  /*treeDebug(pThis);*/
 	return __DS__OS__NORMAL__;
 }
 
 int osDelete(struct os_t *pThis, void *pObj)
 {
+  if (pThis->size == 0)
+    return __DS__OS__OBJ_NOT_EXIST__;
 	struct node* cur = pThis->head;
   if (pThis->size <= 3)
   {
@@ -508,14 +527,18 @@ int osDelete(struct os_t *pThis, void *pObj)
   {
     re = cur->next;
     if (cur == pThis->head)
+    {
       pThis->head = re;
+      pThis->head->parent = NULL;
+    }
     temp = re->parent;
+    if (temp == cur)
+      temp = re;
     /*fix level nChild*/
     re->parent->nChild--;
-    if (re->level > re->parent->right->level)
-      re->parent->level--;
     /*fix linked list*/
-    cur->pre->next = re;
+    if (cur->pre)
+      cur->pre->next = re;
     re->pre = cur->pre;
     /*fix tree structure*/
     if (re->parent == cur)
@@ -524,7 +547,11 @@ int osDelete(struct os_t *pThis, void *pObj)
       if (re->left)
         re->left->parent = re;
       re->parent = cur->parent;
-      cur->parent->right = re;
+      if (cur->parent)
+        if (cur->parent->right == cur)
+          cur->parent->right = re;
+        else
+          cur->parent->left = re;
     }
     else
     {
@@ -553,14 +580,18 @@ int osDelete(struct os_t *pThis, void *pObj)
   {
     re = cur->pre;
     if (cur == pThis->head)
+    {
       pThis->head = re;
+      pThis->head->parent;
+    }
     temp = re->parent;
+    if (temp == cur)
+      temp = re;
     /*fix level nChild*/
     re->parent->nChild--;
-    if (re->level > re->parent->left->level)
-      re->parent->level--;
     /*fix linked list*/
-    cur->next->pre = re;
+    if (cur->next)
+      cur->next->pre = re;
     re->next = cur->next;
     /*fix tree structure*/
     if (re->parent == cur)
@@ -569,7 +600,11 @@ int osDelete(struct os_t *pThis, void *pObj)
       if (re->right)
         re->right->parent = re;
       re->parent = cur->parent;
-      cur->parent->left = re;
+      if (cur->parent)
+        if (cur->parent->left == cur)
+          cur->parent->left = re;
+        else
+          cur->parent->right = re;
     }
     else
     {
@@ -598,26 +633,30 @@ int osDelete(struct os_t *pThis, void *pObj)
   {
     temp = cur->parent;
     if (cur->pre)
-    {
       cur->pre->next = cur->next;
-    }
     if (cur->next)
-    {
       cur->next->pre = cur->pre;
-    }
     if (cur->parent == NULL)
       ;
     else if (cur->parent->right == cur)
-      cur->parent->right = NULL;
-    else if (cur->parent->left == cur)
-      cur->parent->left = NULL;
-    if (cur->parent)
     {
-      cur->parent->level = (cur->parent->left) ? cur->parent->left->level-1 : 1;
+      cur->parent->right = NULL;
+      if (cur->parent)
+      {
+        cur->parent->level = (cur->parent->left) ? cur->parent->left->level+1 : 1;
+      }
+    }
+    else if (cur->parent->left == cur)
+    {
+      cur->parent->left = NULL;
+      if (cur->parent)
+      {
+        cur->parent->level = (cur->parent->right) ? cur->parent->right->level+1 : 1;
+      }
     }
     free(cur->obj);
-    cur = NULL;
-    if (temp == NULL || pThis->size == 1)
+    free(cur);
+    if (pThis->size == 1)
     {
       pThis->size--;
       return __DS__OS__NORMAL__;
@@ -628,7 +667,7 @@ int osDelete(struct os_t *pThis, void *pObj)
   while (1)
   {
     if (cur->left == NULL && cur->right == NULL)
-      ;
+      cur->level = 1;
     else if (cur->right == NULL)
     {
       cur->level = cur->left->level+1;
@@ -650,12 +689,9 @@ int osDelete(struct os_t *pThis, void *pObj)
         if (cur->right->level == 2)
         {
           if (cur == pThis->head)
-          {
             pThis->head = buggy(cur, 1);
-          }
           else
             buggy(cur, 1);
-          break;
         }
         /*left = 0 right = 2*/
       }
@@ -664,12 +700,9 @@ int osDelete(struct os_t *pThis, void *pObj)
         if (cur->left->level == 2)
         {
           if (cur == pThis->head)
-          {
             pThis->head = buggy(cur, 2);
-          }
           else
             buggy(cur, 2);
-          break;
         }
         /*left = 2 right = NULL*/
       }
@@ -677,28 +710,21 @@ int osDelete(struct os_t *pThis, void *pObj)
     else if (cur->right->level - cur->left->level == 2)
     {
       if (cur == pThis->head)
-      {
         pThis->head = buggy(cur, 1);
-      }
       else
         buggy(cur, 1);
       /*right > left*/
-      break;
     }
-    else if (cur->right->level - cur->left->level == -2)
+    else if (cur->left->level - cur->right->level == 2)
     {
       if (cur == pThis->head)
-      {
         pThis->head = buggy(cur, 2);
-      }
       else
         buggy(cur, 2);
       /*right < left*/
-      break;
     }
-    if (cur == pThis->head)
+    if (cur->parent == NULL)
       break;
-    cur->parent->nChild++;
     cur = cur->parent;
   }
   pThis->size--;
@@ -707,6 +733,8 @@ int osDelete(struct os_t *pThis, void *pObj)
 
 int osFind(struct os_t *pThis, void *pObj)
 {
+  if (pThis->size == 0)
+    return __DS__OS__OBJ_NOT_EXIST__;
 	struct node* cur = pThis->head;
   while (1)
   {
@@ -729,12 +757,12 @@ int osFind(struct os_t *pThis, void *pObj)
         cur = cur->left;
     }
   }
-  pThis->size--;
-  return __DS__OS__OBJ_EXIST__;
 }
 
 int osLowerBound(struct os_t *pThis, void *lowObj, void *pRetObj)
 {
+  if (pThis->size == 0)
+    return __DS__OS__OBJ_NOT_EXIST__;
   struct node* cur = pThis->head;
   while (1)
   {
@@ -766,6 +794,8 @@ int osLowerBound(struct os_t *pThis, void *lowObj, void *pRetObj)
 
 int osUpperBound(struct os_t *pThis, void *upObj, void *pRetObj)
 {
+  if (pThis->size == 0)
+    return __DS__OS__OBJ_NOT_EXIST__;
   struct node* cur = pThis->head;
   while (1)
   {
