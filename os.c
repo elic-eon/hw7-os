@@ -42,6 +42,10 @@ struct os_t *osAlloc()
 {
 	return malloc(sizeof(struct os_t));
 }
+struct os_inner_t *ositAlloc()
+{
+  return malloc(sizeof(struct os_inner_t));
+}
 
 struct node *newNode(size_t objSize, void *pObj, struct node *pParent)
 {
@@ -144,29 +148,35 @@ struct node * R_Rotate(struct node *cur)
   cur->level = (cur->left == NULL) ? cur->right->level+1 :
   (cur->right->level > cur->left->level) ? cur->right->level+1 : cur->left->level+1;*/
   if (cur->right->left == NULL && cur->right->right == NULL)
+  {
     cur->right->level = 1;
+    cur->right->nChild = 1;
+  }
   else if (cur->right->right == NULL)
   {
     cur->right->level = cur->right->left->level+1;
+    cur->right->nChild = cur->right->left->nChild+1;
   }
   else if (cur->right->left == NULL)
   {
     cur->right->level = cur->right->right->level+1;
+    cur->right->nChild = cur->right->right->nChild+1;
   }
   else
   {
     cur->right->level = (cur->right->right->level > cur->right->left->level) ? cur->right->right->level+1: cur->right->left->level+1;
+    cur->right->nChild = cur->right->right->nChild + cur->right->left->nChild+1;
   }
   if (cur->left == NULL)
   {
     cur->level = cur->right->level+1;
+    cur->nChild = cur->right->nChild+1;
   }
   else
   {
     cur->level = (cur->right->level > cur->left->level) ? cur->right->level+1: cur->left->level+1;
+    cur->nChild = cur->right->nChild +  cur->left->nChild+1;
   }
-  cur->nChild += (cur->right->right == NULL)? 1 : (cur->right->right->nChild + 1);
-  cur->right->nChild -= (cur->left == NULL) ? 1 : (cur->left->nChild + 1);
   return cur;
 }
 struct node * L_Rotate(struct node *cur)
@@ -186,29 +196,35 @@ struct node * L_Rotate(struct node *cur)
   /*cur->level = (cur->right == NULL) ? cur->left->level+1 :
     ((cur->right->level > cur->left->level) ? (cur->right->level+1) : (cur->left->level+1));*/
   if (cur->left->left == NULL && cur->left->right == NULL)
+  {
     cur->left->level = 1;
+    cur->left->nChild = 1;
+  }
   else if (cur->left->right == NULL)
   {
     cur->left->level = cur->left->left->level+1;
+    cur->left->nChild = cur->left->left->nChild+1;
   }
   else if (cur->left->left == NULL)
   {
     cur->left->level = cur->left->right->level+1;
+    cur->left->nChild = cur->left->right->nChild+1;
   }
   else
   {
     cur->left->level = (cur->left->right->level > cur->left->left->level) ? cur->left->right->level+1: cur->left->left->level+1;
+    cur->left->nChild = cur->left->right->nChild + cur->left->left->nChild+1;
   }
   if (cur->right == NULL)
   {
     cur->level = cur->left->level+1;
+    cur->nChild = cur->left->nChild+1;
   }
   else
   {
     cur->level = (cur->right->level > cur->left->level) ? cur->right->level+1: cur->left->level+1;
+    cur->nChild = cur->right->nChild + cur->left->nChild+1;
   }
-  cur->nChild += (cur->left->left == NULL) ? 1 : (cur->left->left->nChild + 1);
-  cur->left->nChild -= (cur->right == NULL) ? 1 : (cur->right->nChild + 1);
   return cur;
 }
 struct node * RL_Rotate(struct node *cur)
@@ -829,6 +845,34 @@ int osUpperBound(struct os_t *pThis, void *upObj, void *pRetObj)
 //Iterator support operator
 int osFindIt(struct os_t *pThis, void *pObj, osit *pRetIt)
 {
+  if (pThis->size == 0)
+    return __DS__OS__OBJ_NOT_EXIST__;
+  struct node* cur = pThis->head;
+  while (1)
+  {
+    if (pThis->cmp(pObj, cur->obj) == 0)
+    {
+      if (*pRetIt == NULL)
+        *pRetIt = ositAlloc();
+      (*pRetIt)->node = NULL;
+      (*pRetIt)->objSize = pThis->objSize;
+      return __DS__OS__OBJ_EXIST__;
+    }
+    else if (pThis->cmp(pObj, cur->obj) > 0)
+    {
+      if (cur->right == NULL)
+        return __DS__OS__OBJ_NOT_EXIST__;
+      else
+        cur = cur->right;
+    }
+    else
+    {
+      if (cur->left == NULL)
+        return __DS__OS__OBJ_NOT_EXIST__;
+      else
+        cur = cur->left;
+    }
+  }
 	/*struct node* cur = pThis->head;*/
 	/*while(cur!=NULL)*/
    /*{*/
@@ -847,6 +891,45 @@ int osFindIt(struct os_t *pThis, void *pObj, osit *pRetIt)
 
 int osLowerIt(struct os_t *pThis, void *pObj, osit *pRetIt)
 {
+  if (pThis->size == 0)
+    return __DS__OS__OBJ_NOT_EXIST__;
+  struct node* cur = pThis->head;
+  while (1)
+  {
+    if (pThis->cmp(pObj, cur->obj) == 0)
+    {
+      if (cur->pre == NULL)
+      {
+        if (*pRetIt == NULL)
+          *pRetIt = ositAlloc();
+        (*pRetIt)->node = cur;
+        (*pRetIt)->objSize = pThis->objSize;
+        return __DS__OS__NORMAL__;
+      }
+      else
+      {
+        if (*pRetIt == NULL)
+          *pRetIt = ositAlloc();
+        (*pRetIt)->node = cur->pre;
+        (*pRetIt)->objSize = pThis->objSize;
+        return __DS__OS__NORMAL__;
+      }
+    }
+    else if (pThis->cmp(pObj, cur->obj) > 0)
+    {
+      if (cur->right == NULL)
+        return __DS__OS__OBJ_NOT_EXIST__;
+      else
+        cur = cur->right;
+    }
+    else
+    {
+      if (cur->left == NULL)
+        return __DS__OS__OBJ_NOT_EXIST__;
+      else
+        cur = cur->left;
+    }
+  }
 	/*struct node* cur = pThis->head;*/
 	/*struct node* pNode = NULL;*/
 	/*while(cur!=NULL)*/
@@ -869,6 +952,45 @@ int osLowerIt(struct os_t *pThis, void *pObj, osit *pRetIt)
 
 int osUpperIt(struct os_t *pThis, void *pObj, osit *pRetIt)
 {
+  if (pThis->size == 0)
+    return __DS__OS__OBJ_NOT_EXIST__;
+  struct node* cur = pThis->head;
+  while (1)
+  {
+    if (pThis->cmp(pObj, cur->obj) == 0)
+    {
+      if (cur->next == NULL)
+      {
+        if (*pRetIt == NULL)
+          *pRetIt = ositAlloc();
+        (*pRetIt)->node = cur;
+        (*pRetIt)->objSize = pThis->objSize;
+        return __DS__OS__NORMAL__;
+      }
+      else
+      {
+        if (*pRetIt == NULL)
+          *pRetIt = ositAlloc();
+        (*pRetIt)->node = cur->next;
+        (*pRetIt)->objSize = pThis->objSize;
+        return __DS__OS__NORMAL__;
+      }
+    }
+    else if (pThis->cmp(pObj, cur->obj) > 0)
+    {
+      if (cur->right == NULL)
+        return __DS__OS__OBJ_NOT_EXIST__;
+      else
+        cur = cur->right;
+    }
+    else
+    {
+      if (cur->left == NULL)
+        return __DS__OS__OBJ_NOT_EXIST__;
+      else
+        cur = cur->left;
+    }
+  }
 	/*struct node* cur = pThis->head;*/
 	/*struct node* pNode = NULL;*/
 	/*while(cur!=NULL)*/

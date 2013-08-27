@@ -15,8 +15,8 @@ struct os_t;
 /* A simple set contain ordered elements
  * Support customized comparison
  * If it is OOM(out of memory) in the memory allocation,
- * Please return __DS__OS__OUT_OF_MEM__ for each function which supports to 
- * return __DS__OS__NORMAL__ when normal execution. 
+ * Please return __DS__OS__OUT_OF_MEM__ for each function which supports to
+ * return __DS__OS__NORMAL__ when normal execution.
  */
 
 struct os_t *osAlloc();
@@ -26,7 +26,7 @@ int osInit(struct os_t *pThis, size_t objSize, size_t cap,
            int (*cmp)(const void*, const void*));
 /* Initialize pThis: set the size of object as objSize
  * and the capacity as cap.
- * the comparison function as cmp: 
+ * the comparison function as cmp:
  *     cmp(objA, objB) returns -1 if keyA < keyB
  *     cmp(objA, objB) returns 0 if keyA = keyB
  *     cmp(objA, objB) returns 1 if keyA > keyB
@@ -37,7 +37,7 @@ int osInit(struct os_t *pThis, size_t objSize, size_t cap,
  */
 
 int osFree(struct os_t *pThis);
-/*  Release the memory. 
+/*  Release the memory.
  * Deep release: You should release the memory allocated by any operation.
  * Return __DS__OS__NORMAL__ for normal execution.
  */
@@ -66,7 +66,7 @@ int osInsert(struct os_t *pThis, void *pObj);
  */
 
 int osDelete(struct os_t *pThis, void *pObj);
-/* Delete a object in the set 
+/* Delete a object in the set
  * Input: pThis, pointer to order set
  *        pObj, pointer to object
  * Output: __DS__OS__NORMAL__ for normal execution & *pObj was in *pThis
@@ -116,7 +116,7 @@ typedef struct os_inner_t *osit;
 /* Ordered set iterator: a pointer to os_inner_t */
 
 int osFreeIt(osit *pRetIt);
-/* Release the memory of iterator. 
+/* Release the memory of iterator.
  * Deep release: You should release the memory allocated by any operation.
  * Return __DS__OS__NORMAL__ for normal execution.
  */
@@ -182,7 +182,7 @@ osit osPrevIt(osit it);
  */
 
 int osFindKthObj(struct os_t *pThis, int k, void *pRetObj);
-/* Bonus 3 
+/* Bonus 3
  * Random Access k-th smallest object in the set
  * Input: pThis, pointer to order set
  *        pRetObj, poiter to the result object

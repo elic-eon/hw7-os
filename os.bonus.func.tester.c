@@ -6,7 +6,7 @@
 
 #define DOUBLE_NEG_INF (-1.0/0.0)
 #define SHORT_NEG_INF SHRT_MIN
-#define DOUBLE_INF (1.0/0.0) 
+#define DOUBLE_INF (1.0/0.0)
 #define SHORT_INF SHRT_MAX
 
 typedef struct os_t os;
@@ -37,7 +37,7 @@ int main()
 	void *data2 = malloc(sizeof(double)*10);
     double double_neg_inf = DOUBLE_NEG_INF;
     short short_neg_inf = SHORT_NEG_INF;
-	
+
     while(1){
         char cmd[10240] = {0};
         int ret;
@@ -57,7 +57,7 @@ int main()
                 else
                     ret = osInit(p, sizeof(short), cap, shortGT);
             }
-                
+
             if(ret != __DS__OS__NORMAL__){
                 printf("Not enough memory.\n");
                 if(p != NULL)
@@ -73,13 +73,13 @@ int main()
             printf("Valid operation: 1)insert, 2)delete, 3)find, 4)get lower bound\n");
             printf("                 5)get upper bound, 6)find-K, 7)pre, 8)next\n");
 			printf("                 9)get item by it 10)empty, 11)free 12)quit\n");
-	
+
             while(choice <= 0 || choice > 12){
                 scanf("%s", cmd);
                 sscanf(cmd, "%d", &choice);
-            } 
+            }
             if(choice == 1){//insert
-                printf("input a %s value:", (type == __DS__DOUBLE__)?"double":"short"); 
+                printf("input a %s value:", (type == __DS__DOUBLE__)?"double":"short");
                 getData(type, data);
                 ret = osInsert(p, data);
                 if(ret==__DS__OS__FULL__)printf("Set is full!\n");
@@ -92,12 +92,12 @@ int main()
                 ret = osDelete(p, data);
                 if(ret==__DS__OS__OBJ_NOT_EXIST__){
                     printf("Element is not in the set.\n");
-                } 
+                }
                 else
 					printf("Delete OK\n");
             }
             else if(choice == 3){//find
-                printf("input a %s value:", (type == __DS__DOUBLE__)?"double":"short"); 
+                printf("input a %s value:", (type == __DS__DOUBLE__)?"double":"short");
                 getData(type, data);
                 ret = osFindIt(p, data, &it);
                 if(ret == __DS__OS__OBJ_EXIST__){
@@ -110,12 +110,12 @@ int main()
 					printData(type, data);
 					printf(" is not in the set.\n");
 			 	}
-            } 
+            }
             else if(choice == 4){//lower bo und
                 printf("input the lower bound:");
                 getData(type, data2);
 				ret = osLowerIt(p, data2, &it);
-        
+
                  if(ret == __DS__OS__NORMAL__ ){
                     printf("The result is ");
                     printData(type, data);
@@ -135,7 +135,7 @@ int main()
                    }
                 else
                     printf("No element found\n");
-            }   
+            }
 			else if(choice == 6){
 				int k ;
 				printf("input the oder in set:");
@@ -146,10 +146,10 @@ int main()
 					printData( type, data);
 					printf(".\n");
 			 	}
-				else 
+				else
 					printf("No element found\n");
 
-			}  
+			}
 			else if(choice == 7) {//pre
 				it = osPrevIt(it);
 				if(it==NULL)
@@ -163,7 +163,7 @@ int main()
 					printf("No next element found\n");
 				else
 					printf("Next OK!\n");
-			} 
+			}
 			else if(choice == 9){//get item by it
 				ret =  osGetByIt(it, data);
 				if(ret == __DS__OS__NORMAL__){
@@ -173,20 +173,20 @@ int main()
 				}else{
 					printf("Invalid Iterator\n");
 				}
-			} 
+			}
             else if(choice == 10){//empty
                 if(osEmpty(p)==__DS__OS__EMPTY__)
                     printf("The os is empty.\n");
                 else
                     printf("The os is not empty.\n");
-            }    
+            }
             else if(choice == 11){
                 osFree(p);
                 p = NULL;
-            }    
+            }
             else if(choice == 12)
                 break;
-        } 
-    } 
+        }
+    }
 }
 
